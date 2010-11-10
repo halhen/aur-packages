@@ -1,0 +1,47 @@
+# Adapted from  http://aur.archlinux.org/packages/mrxvt-utf8-svn/mrxvt-utf8-svn/PKGBUILD
+# Contributor: Lukas Papiewski <papi@papiewski.pl>
+# Contributor: M Rawash <mrawash@gmail.com>
+# Maintainer: Henrik Hallberg <halhen@k2h.se>
+pkgname=mrxvt-minimal
+pkgver=0.5.4
+pkgrel=1
+pkgdesc="A multi-tabbed X terminal emulator based on rxvt code, minimally built"
+arch=('i686' 'x86_64')
+url="http://materm.sourceforge.net"
+license=('GPL')
+makedepends=('subversion')
+optdepends=('perl: for mrxvtset.pl script')
+replaces=('mrxvt' 'mrxvt-svn' 'mrxvtutf8-svn')
+conflicts=('mrxvt' 'mrxvt-svn')
+provides=('mrxvt')
+md5sums=()
+
+build() {
+  # Don't use pacmans SCM resolution
+  local _svntrunk=https://materm.svn.sourceforge.net/svnroot/materm/release-${pkgver}
+  local _svnmod=mrxvt
+  cd "$srcdir"
+
+  if [ -d $_svnmod/.svn ]; then
+    (cd $_svnmod && svn up -r $pkgver)
+  else
+    svn co $_svntrunk --config-dir ./ $_svnmod
+  fi
+
+  msg "SVN checkout done or server timeout"
+  msg "Starting make..."
+
+  rm -rf "$srcdir/$_svnmod-build"
+  cp -r "$srcdir/$_svnmod" "$srcdir/$_svnmod-build"
+  cd "$srcdir/$_svnmod-build"
+
+  ./bootstrap.sh
+  ./configure --prefix=/usr \
+              --sysconfdir=/etc \
+              --mandir=/usr/share/man \
+              --enable-minimal \
+              --disable-xterm-scroll
+
+  make || return 1
+  make DESTDIR=${pkgdir} install
+}
